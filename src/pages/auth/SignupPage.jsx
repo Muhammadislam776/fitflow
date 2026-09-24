@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Dumbbell, Mail, Lock, User, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Dumbbell, Mail, Lock, User, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { Input } from '../../components/common/Input';
@@ -14,61 +14,73 @@ export const SignupPage = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState('member'); // 'member' | 'trainer' | 'admin'
   const [adminPasscode, setAdminPasscode] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const { signup } = useAuth();
   const { showToast } = useNotification();
   const navigate = useNavigate();
 
+  const isValidEmail = (val) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
 
-    if (password.length < 6) {
-      showToast({
-        type: 'warning',
-        title: 'Password Too Short',
-        message: 'Password must be at least 6 characters.',
-      });
+    const cleanName = fullName.trim();
+    const cleanEmail = email.trim();
+
+    // 1. Name validation
+    if (!cleanName || cleanName.length < 2) {
+      setErrorMessage('Please enter your full name (minimum 2 characters).');
+      return;
+    }
+
+    // 2. Email validation
+    if (!cleanEmail || !isValidEmail(cleanEmail)) {
+      setErrorMessage('Please enter a valid email address (e.g. name@domain.com).');
+      return;
+    }
+
+    // 3. Password checks
+    if (!password || password.length < 6) {
+      setErrorMessage('Password is too short. It must contain at least 6 characters.');
       return;
     }
 
     if (password !== confirmPassword) {
-      showToast({
-        type: 'error',
-        title: 'Passwords Mismatch',
-        message: 'The entered passwords do not match.',
-      });
+      setErrorMessage('Passwords do not match. Please re-enter your confirm password.');
       return;
     }
 
+    // 4. Admin key check
     if (role === 'admin' && adminPasscode !== 'FITFLOW2026') {
-      showToast({
-        type: 'error',
-        title: 'Admin Verification Key Required',
-        message: 'Enter passkey "FITFLOW2026" to register as Gym Owner / Admin.',
-      });
+      setErrorMessage('Invalid Admin Passkey. Please enter "FITFLOW2026" to authorize Admin account creation.');
       return;
     }
 
     setIsLoading(true);
     try {
       await signup({
-        full_name: fullName,
-        email,
+        full_name: cleanName,
+        email: cleanEmail,
         password,
         role,
       });
 
       showToast({
         type: 'success',
-        title: 'Account Created Successfully! 🎉',
-        message: 'Please log in with your new email and password.',
+        title: 'Account Registered Successfully! 🎉',
+        message: 'Your account is now created. Please log in with your credentials.',
         triggerConfetti: true,
       });
 
-      // Redirect to Login with prefilled email as requested: "First create account, then log in"
-      navigate(`/login?email=${encodeURIComponent(email)}&registered=true`);
+      // Redirect user to log in with their created account
+      navigate(`/login?email=${encodeURIComponent(cleanEmail)}&registered=true`);
     } catch (err) {
+      setErrorMessage(err.message || 'Registration failed.');
       showToast({
         type: 'error',
         title: 'Registration Error',
@@ -94,18 +106,29 @@ export const SignupPage = () => {
           Create Your Account
         </h2>
         <p className="mt-1 text-sm text-slate-500">
-          Step 1: Register your credentials • Step 2: Log in to your portal
+          Register first to access your personalized fitness dashboard.
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
         <Card className="p-8 shadow-soft-xl border-slate-200/90">
+          {/* Error Notice */}
+          {errorMessage && (
+            <div className="mb-5 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2.5 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+              <p className="font-semibold">{errorMessage}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               label="Full Name"
               type="text"
               value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              onChange={(e) => {
+                setFullName(e.target.value);
+                if (errorMessage) setErrorMessage('');
+              }}
               placeholder="e.g. Liam Foster"
               icon={User}
               required
@@ -115,8 +138,11 @@ export const SignupPage = () => {
               label="Email Address"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="liam@example.com"
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (errorMessage) setErrorMessage('');
+              }}
+              placeholder="e.g. liam@example.com"
               icon={Mail}
               required
             />
@@ -125,8 +151,11 @@ export const SignupPage = () => {
               label="Password (min. 6 characters)"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (errorMessage) setErrorMessage('');
+              }}
+              placeholder="At least 6 characters"
               icon={Lock}
               required
             />
@@ -135,8 +164,11 @@ export const SignupPage = () => {
               label="Confirm Password"
               type="password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="••••••••"
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (errorMessage) setErrorMessage('');
+              }}
+              placeholder="Re-type password"
               icon={Lock}
               required
             />
@@ -204,13 +236,13 @@ export const SignupPage = () => {
               isLoading={isLoading}
               icon={ArrowRight}
             >
-              Create Account
+              Complete Registration
             </Button>
           </form>
 
           <div className="mt-6 pt-6 border-t border-slate-100 text-center text-xs text-slate-500">
             Already have an account?{' '}
-            <Link to="/login" className="font-semibold text-brand-600 hover:text-brand-700">
+            <Link to="/login" className="font-bold text-brand-600 hover:text-brand-700">
               Sign In to Your Account
             </Link>
           </div>

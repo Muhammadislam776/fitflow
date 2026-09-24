@@ -1,34 +1,33 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../services/supabase';
 import { api } from '../services/api';
-import { INITIAL_PROFILES } from '../data/initialSeedData';
 
 const AuthContext = createContext(null);
 
 const CURRENT_USER_KEY = 'fitflow_auth_user';
 const CREDENTIALS_KEY = 'fitflow_user_credentials';
 
-// Pre-seeded credentials for instant testing
+// Initial pre-registered users (if user wants to test existing accounts)
 const DEFAULT_CREDENTIALS = {
   'admin@fitflow.com': {
     id: 'user-admin-1',
-    password: 'password123',
+    password: 'Password123',
     role: 'admin',
     full_name: 'Muhammad Islam',
     gym_id: 'gym-001',
     avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
   },
-  'alex.trainer@fitflow.com': {
+  'trainer@fitflow.com': {
     id: 'user-trainer-1',
-    password: 'password123',
+    password: 'Password123',
     role: 'trainer',
     full_name: 'Alex Morgan',
     gym_id: 'gym-001',
     avatar_url: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=crop&w=200&q=80',
   },
-  'sarah@example.com': {
+  'member@fitflow.com': {
     id: 'user-member-1',
-    password: 'password123',
+    password: 'Password123',
     role: 'member',
     full_name: 'Sarah Jenkins',
     gym_id: 'gym-001',
@@ -46,7 +45,7 @@ const getStoredCredentials = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  // Load stored active session
+  // Session strictly loads from stored logged-in user, default NULL (must log in!)
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem(CURRENT_USER_KEY);
@@ -54,8 +53,7 @@ export const AuthProvider = ({ children }) => {
     } catch (e) {
       console.error('Failed to parse saved user session:', e);
     }
-    // Default to initial admin so demo exploration remains friction-free
-    return INITIAL_PROFILES[0];
+    return null;
   });
 
   const [loading, setLoading] = useState(false);
@@ -87,6 +85,8 @@ export const AuthProvider = ({ children }) => {
         } catch (e) {
           console.warn('Could not fetch remote profile:', e);
         }
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
       }
     });
 
@@ -95,15 +95,13 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  // Login action: verifies email and password against Supabase or credentials store
+  // Strict Login Authentication
   const login = async (email, password) => {
     setLoading(true);
     const normalizedEmail = email.trim().toLowerCase();
 
     try {
-      let remoteUser = null;
-
-      // Try Supabase Auth first if configured
+      // 1. Try Supabase Auth first if configured
       if (isSupabaseConfigured && supabase) {
         try {
           const { data, error } = await supabase.auth.signInWithPassword({
@@ -112,7 +110,6 @@ export const AuthProvider = ({ children }) => {
           });
 
           if (!error && data?.user) {
-            remoteUser = data.user;
             const { data: profile } = await supabase
               .from('profiles')
               .select('*')
@@ -132,23 +129,23 @@ export const AuthProvider = ({ children }) => {
             return finalUser;
           }
         } catch (sbErr) {
-          console.warn('Supabase auth attempt failed, checking local credentials fallback:', sbErr.message);
+          console.warn('Supabase remote auth check:', sbErr.message);
         }
       }
 
-      // Check credentials store
+      // 2. Local Registry Verification
       const credentials = getStoredCredentials();
       const account = credentials[normalizedEmail];
 
       if (!account) {
-        throw new Error(`No account found for "${email}". Please sign up first.`);
+        throw new Error('Account not found with this email. Please register first.');
       }
 
       if (account.password !== password) {
         throw new Error('Incorrect password. Please verify your credentials and try again.');
       }
 
-      // Lookup full profile
+      // Lookup profile and role
       const profiles = await api.getProfiles();
       const matchedProfile = profiles.find((p) => p.email.toLowerCase() === normalizedEmail) || {
         id: account.id,
@@ -166,14 +163,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Signup action: registers user in Supabase Auth and credentials registry
+  // Strict Signup Registration
   const signup = async ({ full_name, email, password, role = 'member' }) => {
     setLoading(true);
     const normalizedEmail = email.trim().toLowerCase();
 
     try {
+      const credentials = getStoredCredentials();
+      if (credentials[normalizedEmail]) {
+        throw new Error(`An account with email "${email}" already exists. Please log in.`);
+      }
+
       let supabaseUserId = null;
 
+      // Register with Supabase if configured
       if (isSupabaseConfigured && supabase) {
         try {
           const { data, error } = await supabase.auth.signUp({
@@ -195,24 +198,21 @@ export const AuthProvider = ({ children }) => {
               created_at: new Date().toISOString(),
             };
 
-            // Attempt to insert profile if table exists
             try {
               await supabase.from('profiles').insert([newProfile]);
             } catch (pErr) {
-              console.warn('Note: profiles table not populated yet in Supabase:', pErr);
+              console.warn('Supabase profiles insert notice:', pErr);
             }
           }
         } catch (sbErr) {
-          console.warn('Supabase signUp warning:', sbErr);
+          console.warn('Supabase signup notice:', sbErr);
         }
       }
 
-      // Local registration
-      const credentials = getStoredCredentials();
+      // Register account in local credentials
       const newId = supabaseUserId || `user-${role}-${Date.now()}`;
       const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(full_name)}`;
 
-      // Save credential
       credentials[normalizedEmail] = {
         id: newId,
         password,
@@ -223,7 +223,7 @@ export const AuthProvider = ({ children }) => {
       };
       localStorage.setItem(CREDENTIALS_KEY, JSON.stringify(credentials));
 
-      // Save profile in api store
+      // Save profile in directory
       const profiles = await api.getProfiles();
       const newProfile = {
         id: newId,
@@ -239,7 +239,7 @@ export const AuthProvider = ({ children }) => {
       profiles.push(newProfile);
       localStorage.setItem('fitflow_profiles', JSON.stringify(profiles));
 
-      // If registering as member, create active membership
+      // If registered as member, activate membership
       if (role === 'member') {
         const memberships = await api.getMemberships();
         memberships.push({
@@ -270,27 +270,15 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem(CURRENT_USER_KEY);
   };
 
-  // Quick switch for live testing all three user personas
-  const switchDemoUser = (role) => {
-    if (role === 'admin') {
-      setUser(INITIAL_PROFILES[0]); // Muhammad Islam
-    } else if (role === 'trainer') {
-      setUser(INITIAL_PROFILES[1]); // Alex Morgan
-    } else if (role === 'member') {
-      setUser(INITIAL_PROFILES[4]); // Sarah Jenkins
-    }
-  };
-
   return (
     <AuthContext.Provider
       value={{
         user,
-        role: user?.role || 'member',
+        role: user?.role || null,
         loading,
         login,
         signup,
         logout,
-        switchDemoUser,
         isAuthenticated: Boolean(user),
       }}
     >

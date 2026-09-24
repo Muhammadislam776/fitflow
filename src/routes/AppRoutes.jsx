@@ -49,7 +49,7 @@ export const AppRoutes = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
 
-        {/* Admin Portal */}
+        {/* Strictly Admin Portal - ONLY Admin allowed! */}
         <Route
           path="/admin"
           element={
@@ -70,11 +70,11 @@ export const AppRoutes = () => {
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 
-        {/* Trainer Portal */}
+        {/* Strictly Trainer Portal - ONLY Trainer allowed! */}
         <Route
           path="/trainer"
           element={
-            <ProtectedRoute allowedRoles={['trainer', 'admin']}>
+            <ProtectedRoute allowedRoles={['trainer']}>
               <DashboardLayout />
             </ProtectedRoute>
           }
@@ -86,11 +86,11 @@ export const AppRoutes = () => {
           <Route path="attendance" element={<TrainerAttendance />} />
         </Route>
 
-        {/* Member Portal */}
+        {/* Strictly Member Portal - ONLY Member allowed! */}
         <Route
           path="/member"
           element={
-            <ProtectedRoute allowedRoles={['member', 'admin']}>
+            <ProtectedRoute allowedRoles={['member']}>
               <DashboardLayout />
             </ProtectedRoute>
           }
@@ -105,7 +105,7 @@ export const AppRoutes = () => {
           <Route path="profile" element={<MemberProfile />} />
         </Route>
 
-        {/* Catch-all */}
+        {/* Catch-all redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>

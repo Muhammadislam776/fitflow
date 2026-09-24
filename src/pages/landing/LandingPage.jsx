@@ -12,24 +12,13 @@ import {
   TrendingUp,
   Sparkles,
   Zap,
-  Activity,
-  Layers,
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { Card } from '../../components/common/Card';
-import { useAuth } from '../../context/AuthContext';
 
 export const LandingPage = () => {
   const navigate = useNavigate();
-  const { switchDemoUser } = useAuth();
-
-  const handleDemoStart = (role) => {
-    switchDemoUser(role);
-    if (role === 'admin') navigate('/admin/dashboard');
-    else if (role === 'trainer') navigate('/trainer/dashboard');
-    else navigate('/member/dashboard');
-  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col selection:bg-brand-500 selection:text-white">
@@ -67,10 +56,10 @@ export const LandingPage = () => {
             <Button
               variant="accent"
               size="sm"
-              onClick={() => handleDemoStart('admin')}
-              icon={Sparkles}
+              onClick={() => navigate('/signup')}
+              icon={ArrowRight}
             >
-              Live Demo
+              Get Started
             </Button>
           </div>
         </div>
@@ -99,43 +88,20 @@ export const LandingPage = () => {
             <Button
               variant="accent"
               size="lg"
-              onClick={() => handleDemoStart('admin')}
+              onClick={() => navigate('/signup')}
               icon={ArrowRight}
               className="w-full sm:w-auto text-base px-8 py-3.5 shadow-soft-lg"
             >
-              Explore Admin Portal
+              Create Your Account
             </Button>
             <Button
               variant="secondary"
               size="lg"
-              onClick={() => handleDemoStart('member')}
+              onClick={() => navigate('/login')}
               className="w-full sm:w-auto text-base px-8 py-3.5"
             >
-              Try Member App Experience
+              Sign In to Dashboard
             </Button>
-          </div>
-
-          {/* Quick Sandbox Persona Banner */}
-          <div className="mt-12 inline-flex flex-wrap items-center justify-center gap-3 p-2 rounded-2xl bg-white border border-slate-200/90 shadow-soft text-xs text-slate-600">
-            <span className="font-bold text-navy-900 px-2">Instant 1-Click Persona Sandbox:</span>
-            <button
-              onClick={() => handleDemoStart('admin')}
-              className="px-3 py-1.5 rounded-xl bg-brand-50 text-brand-700 hover:bg-brand-600 hover:text-white font-semibold transition-colors"
-            >
-              Admin (Muhammad)
-            </button>
-            <button
-              onClick={() => handleDemoStart('trainer')}
-              className="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white font-semibold transition-colors"
-            >
-              Trainer (Alex)
-            </button>
-            <button
-              onClick={() => handleDemoStart('member')}
-              className="px-3 py-1.5 rounded-xl bg-accent-50 text-accent-700 hover:bg-accent-500 hover:text-white font-semibold transition-colors"
-            >
-              Member (Sarah)
-            </button>
           </div>
         </div>
       </section>
@@ -170,7 +136,7 @@ export const LandingPage = () => {
               </div>
               <h3 className="text-lg font-bold text-navy-900">Real-Time Class Capacity</h3>
               <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                Enforces strict spot quotas at the database level. Prevents race conditions so two members can never take the final 20th spot concurrently.
+                Enforces strict spot quotas at the database level. Prevents race conditions so two members can never take the final spot concurrently.
               </p>
             </Card>
 
@@ -232,10 +198,10 @@ export const LandingPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
             {[
-              { step: '01', title: 'Create Studio', desc: 'Setup your gym profile, branding, and location settings.' },
-              { step: '02', title: 'Define Plans', desc: 'Create monthly packages, pricing tiers, and class quotas.' },
-              { step: '03', title: 'Schedule Classes', desc: 'Assign certified trainers, studio locations, and spot caps.' },
-              { step: '04', title: 'Scan Passes', desc: 'Members check in with dynamic QR codes via webcam scanner.' },
+              { step: '01', title: 'Register Account', desc: 'Sign up as a Member, Trainer, or Gym Owner with validated credentials.' },
+              { step: '02', title: 'Sign In', desc: 'System authorizes your credentials and unlocks your dedicated portal.' },
+              { step: '03', title: 'Manage Classes', desc: 'Schedule workout sessions with certified coaches and spot limits.' },
+              { step: '04', title: 'Scan Passes', desc: 'Members check in with dynamic 60s QR codes via camera scanner.' },
               { step: '05', title: 'Scale Community', desc: 'Monitor attendance metrics, member streaks, and retention.' },
             ].map((item, i) => (
               <div key={i} className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-soft text-left relative">
@@ -270,8 +236,8 @@ export const LandingPage = () => {
                 </div>
               </div>
               <div className="mt-8 pt-4 border-t border-slate-100">
-                <Button variant="secondary" className="w-full" onClick={() => handleDemoStart('member')}>
-                  Get Basic
+                <Button variant="secondary" className="w-full" onClick={() => navigate('/signup')}>
+                  Choose Basic
                 </Button>
               </div>
             </Card>
@@ -291,8 +257,8 @@ export const LandingPage = () => {
                 </div>
               </div>
               <div className="mt-8 pt-4 border-t border-slate-100">
-                <Button variant="accent" className="w-full" onClick={() => handleDemoStart('member')}>
-                  Get Premium
+                <Button variant="accent" className="w-full" onClick={() => navigate('/signup')}>
+                  Choose Premium
                 </Button>
               </div>
             </Card>
@@ -309,46 +275,11 @@ export const LandingPage = () => {
                 </div>
               </div>
               <div className="mt-8 pt-4 border-t border-slate-100">
-                <Button variant="secondary" className="w-full" onClick={() => handleDemoStart('member')}>
-                  Get Unlimited
+                <Button variant="secondary" className="w-full" onClick={() => navigate('/signup')}>
+                  Choose Unlimited
                 </Button>
               </div>
             </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Bottom CTA Strip */}
-      <section className="py-20 bg-gradient-to-r from-brand-900 via-navy-900 to-navy-950 text-white relative overflow-hidden">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center relative z-10">
-          <Badge variant="accent" size="sm" className="mb-4">
-            Commercial Ready (Phase 1)
-          </Badge>
-          <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
-            Ready to Transform Your Gym Management?
-          </h2>
-          <p className="mt-4 text-sm sm:text-base text-brand-200 max-w-xl mx-auto">
-            Experience real-time capacity management, automated waitlist promotions, and frictionless QR check-ins today.
-          </p>
-
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button
-              variant="accent"
-              size="lg"
-              onClick={() => handleDemoStart('admin')}
-              icon={Sparkles}
-              className="w-full sm:w-auto px-8"
-            >
-              Launch Live Platform
-            </Button>
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={() => navigate('/signup')}
-              className="w-full sm:w-auto px-8 bg-white/10 text-white hover:bg-white/20 border-white/20"
-            >
-              Create Account
-            </Button>
           </div>
         </div>
       </section>
@@ -360,15 +291,14 @@ export const LandingPage = () => {
             <div className="w-6 h-6 rounded-lg bg-brand-600 flex items-center justify-center text-white text-[11px] font-bold">
               FF
             </div>
-            <span className="font-bold text-navy-900">FITFLOW Performance Platform</span>
+            <span className="font-bold text-navy-900">FITFLOW Platform</span>
             <span>© 2026. Production Phase 1.</span>
           </div>
 
           <div className="flex items-center gap-6">
             <span className="flex items-center gap-1.5 text-emerald-600 font-semibold">
-              <ShieldCheck className="w-4 h-4" /> RLS Security Enabled
+              <ShieldCheck className="w-4 h-4" /> Role Authorization Enforced
             </span>
-            <span className="text-slate-400">PostgreSQL + Vite + React</span>
           </div>
         </div>
       </footer>

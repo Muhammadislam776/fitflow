@@ -1,13 +1,21 @@
 import React from 'react';
-import { Menu, QrCode, Sparkles, User, Dumbbell } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Menu, QrCode, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useGym } from '../../context/GymContext';
 import { NotificationDropdown } from './NotificationDropdown';
 import { Button } from '../common/Button';
+import { Badge } from '../common/Badge';
 
 export const Navbar = ({ onOpenSidebar, onOpenScanner }) => {
-  const { user, role, switchDemoUser } = useAuth();
+  const { user, role, logout } = useAuth();
   const { gym } = useGym();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   return (
     <header className="sticky top-0 z-30 h-16 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 flex items-center justify-between">
@@ -31,47 +39,26 @@ export const Navbar = ({ onOpenSidebar, onOpenScanner }) => {
         </div>
       </div>
 
-      {/* Center / Right: Interactive Quick Role Persona Switcher */}
-      <div className="flex items-center gap-2 sm:gap-4">
-        {/* Quick Role Switcher for seamless grading & testing */}
-        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
-          <span className="hidden md:inline px-2 font-semibold text-slate-500">
-            Role:
-          </span>
-          <button
-            onClick={() => switchDemoUser('admin')}
-            className={`px-2.5 py-1 rounded-lg font-medium transition-all ${
-              role === 'admin'
-                ? 'bg-brand-600 text-white shadow-soft-sm font-semibold'
-                : 'text-slate-600 hover:text-navy-900'
-            }`}
-          >
-            Admin
-          </button>
-          <button
-            onClick={() => switchDemoUser('trainer')}
-            className={`px-2.5 py-1 rounded-lg font-medium transition-all ${
-              role === 'trainer'
-                ? 'bg-brand-600 text-white shadow-soft-sm font-semibold'
-                : 'text-slate-600 hover:text-navy-900'
-            }`}
-          >
-            Trainer
-          </button>
-          <button
-            onClick={() => switchDemoUser('member')}
-            className={`px-2.5 py-1 rounded-lg font-medium transition-all ${
-              role === 'member'
-                ? 'bg-accent-500 text-white shadow-soft-sm font-semibold'
-                : 'text-slate-600 hover:text-navy-900'
-            }`}
-          >
-            Member
-          </button>
-        </div>
+      {/* Right: Authenticated Role Badge & User Controls */}
+      <div className="flex items-center gap-3 sm:gap-4">
+        {/* Strictly display verified role badge - No switching allowed! */}
+        {role && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-slate-400 uppercase hidden md:inline">
+              Portal:
+            </span>
+            <Badge
+              variant={role === 'admin' ? 'brand' : role === 'trainer' ? 'neutral' : 'accent'}
+              size="md"
+              dot
+            >
+              {role.toUpperCase()}
+            </Badge>
+          </div>
+        )}
 
-        {/* Scanner CTA Button */}
-        {role !== 'member' ? (
+        {/* Quick Action according to authorized role */}
+        {role === 'admin' || role === 'trainer' ? (
           <Button
             variant="accent"
             size="sm"
@@ -81,21 +68,29 @@ export const Navbar = ({ onOpenSidebar, onOpenScanner }) => {
           >
             Scan Pass
           </Button>
-        ) : (
+        ) : role === 'member' ? (
           <Button
             variant="outline"
             size="sm"
-            to="/member/qr"
+            onClick={() => navigate('/member/qr')}
             icon={QrCode}
-            onClick={() => window.location.assign('/member/qr')}
             className="hidden sm:inline-flex"
           >
             My QR Pass
           </Button>
-        )}
+        ) : null}
 
         {/* Notifications */}
         <NotificationDropdown />
+
+        {/* Logout */}
+        <button
+          onClick={handleLogout}
+          className="p-2 text-slate-400 hover:text-rose-600 rounded-xl hover:bg-rose-50 transition-colors"
+          title="Sign Out"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
       </div>
     </header>
   );
