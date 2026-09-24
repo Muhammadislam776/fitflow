@@ -239,69 +239,68 @@ export const TrainerDashboard = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
-      {/* 1. HERO SPOTLIGHT BANNER */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-navy-950 via-slate-900 to-brand-950 text-white p-6 sm:p-8 shadow-2xl border border-white/10">
-        {/* Gym atmosphere background image with dark overlay */}
+      {/* 1. HERO SPOTLIGHT BANNER (High-Contrast & Ultra-Sharp) */}
+      <div className="relative overflow-hidden rounded-3xl bg-[#080d1a] bg-gradient-to-br from-[#060a15] via-[#0d1527] to-[#171f38] text-white p-6 sm:p-8 shadow-2xl border border-slate-700/60">
+        {/* Background photo with strong dark tint to guarantee 100% text readability */}
         <div
-          className="absolute inset-0 opacity-15 bg-cover bg-center pointer-events-none mix-blend-luminosity"
+          className="absolute inset-0 opacity-20 bg-cover bg-center pointer-events-none"
           style={{
             backgroundImage:
               'url(https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1600&q=80)',
           }}
         />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#060a15]/95 via-[#0d1527]/85 to-[#060a15]/90 pointer-events-none" />
 
         {/* Ambient glow effects */}
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-80 h-80 bg-brand-500/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 -mb-10 w-60 h-60 bg-accent-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-80 h-80 bg-brand-500/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-10 w-60 h-60 bg-accent-500/15 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="space-y-3">
+          <div className="space-y-4 max-w-3xl">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 Floor Active • Coach Mode
               </span>
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm">
                 <Award className="w-3.5 h-3.5" />
                 Master Level Coach
               </span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight">
-              Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-white to-accent-300">Coach {coachName}</span> 🔥
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight drop-shadow-md text-white">
+              Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-400 to-accent-400">Coach {coachName}</span> 🔥
             </h1>
 
-            <p className="text-sm sm:text-base text-slate-300 max-w-2xl font-light">
+            <p className="text-sm sm:text-base text-slate-200 font-normal leading-relaxed">
               Your studio is primed. Review today's roster, launch the interval stopwatch, and scan attendee QR passes at the door.
             </p>
 
-            {/* Quick coach stats bar */}
-            <div className="flex flex-wrap items-center gap-4 sm:gap-6 pt-2 text-xs sm:text-sm text-slate-300">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-white text-base">4.96 ★</span>
-                <span className="text-slate-400">(142 athlete reviews)</span>
+            {/* High-contrast Coach Badges */}
+            <div className="flex flex-wrap items-center gap-3 pt-1 text-xs sm:text-sm">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/15">
+                <span className="font-black text-amber-300 text-sm">4.96 ★</span>
+                <span className="text-slate-300 font-medium">(142 athlete reviews)</span>
               </div>
-              <div className="h-4 w-px bg-white/20 hidden sm:block" />
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-accent-400 text-base">18.5 hrs</span>
-                <span className="text-slate-400">Coached this week</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/15">
+                <span className="font-black text-accent-400 text-sm">18.5 hrs</span>
+                <span className="text-slate-300 font-medium">Coached this week</span>
               </div>
-              <div className="h-4 w-px bg-white/20 hidden sm:block" />
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-emerald-400 text-base">98.2%</span>
-                <span className="text-slate-400">Punctuality index</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/15">
+                <span className="font-black text-emerald-300 text-sm">98.2%</span>
+                <span className="text-slate-300 font-medium">Punctuality index</span>
               </div>
             </div>
           </div>
 
           {/* Quick Action Buttons */}
-          <div className="flex flex-row sm:flex-col lg:flex-row items-center gap-3">
+          <div className="flex flex-row sm:flex-col lg:flex-row items-center gap-3 shrink-0">
             <button
               onClick={() => {
                 setActiveClassId(null);
                 setScannerOpen(true);
               }}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-accent-500 to-orange-500 text-white font-bold shadow-lg shadow-accent-500/30 hover:shadow-accent-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2.5 px-6 py-4 rounded-2xl bg-gradient-to-r from-accent-500 to-orange-500 text-white font-black text-sm shadow-xl shadow-accent-500/40 hover:shadow-accent-500/60 hover:scale-[1.03] active:scale-[0.98] transition-all cursor-pointer border border-accent-400/30"
             >
               <QrCode className="w-5 h-5 animate-pulse" />
               <span>Launch QR Scanner</span>
@@ -310,27 +309,27 @@ export const TrainerDashboard = () => {
             <button
               onClick={handleSyncData}
               disabled={isSyncing}
-              className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-sm font-semibold backdrop-blur-md border border-white/15 transition-all cursor-pointer"
+              className="flex items-center justify-center gap-2 px-5 py-4 rounded-2xl bg-slate-800/90 hover:bg-slate-700/90 text-white text-sm font-bold backdrop-blur-md border border-slate-600/80 transition-all cursor-pointer shadow-lg"
               title="Sync with Supabase"
             >
-              <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin text-brand-400' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin text-brand-400' : 'text-slate-300'}`} />
               <span className="hidden sm:inline">{syncSuccess ? 'Synced!' : 'Cloud Sync'}</span>
             </button>
           </div>
         </div>
 
         {/* Real-time Connection Status Indicator */}
-        <div className="mt-6 pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
-          <div className="flex items-center gap-2">
+        <div className="mt-6 pt-4 border-t border-slate-700/60 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800">
             <span className="relative flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
             </span>
-            <span className="text-slate-300 font-medium">Supabase Realtime Cloud Connected</span>
-            <span className="text-slate-500">• Latency 22ms</span>
+            <span className="text-emerald-300 font-bold">Supabase Realtime Cloud Connected</span>
+            <span className="text-slate-400">• Latency 22ms</span>
           </div>
-          <span className="text-slate-400">
-            Assigned Studio: <strong className="text-white">FitFlow Downtown Studio 1 & Turf</strong>
+          <span className="text-slate-300 font-medium">
+            Assigned Studio: <strong className="text-white font-bold">FitFlow Downtown Studio 1 & Turf</strong>
           </span>
         </div>
       </div>

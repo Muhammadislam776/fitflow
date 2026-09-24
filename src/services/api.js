@@ -8,6 +8,7 @@ import {
   INITIAL_BOOKINGS,
   INITIAL_WAITLISTS,
   INITIAL_ATTENDANCE,
+  INITIAL_NOTIFICATIONS,
 } from '../data/initialSeedData';
 
 const STORAGE_KEYS = {
@@ -56,6 +57,7 @@ export const initializeDataStore = () => {
   if (!localStorage.getItem(STORAGE_KEYS.BOOKINGS)) setStored(STORAGE_KEYS.BOOKINGS, INITIAL_BOOKINGS);
   if (!localStorage.getItem(STORAGE_KEYS.WAITLISTS)) setStored(STORAGE_KEYS.WAITLISTS, INITIAL_WAITLISTS);
   if (!localStorage.getItem(STORAGE_KEYS.ATTENDANCE)) setStored(STORAGE_KEYS.ATTENDANCE, INITIAL_ATTENDANCE);
+  if (!localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS)) setStored(STORAGE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS);
 };
 
 export const resetDataStore = () => {
@@ -693,5 +695,77 @@ export const api = {
       distributionData,
       upcomingClasses: classes.slice(0, 4),
     };
+  },
+
+  // --- Real-Time Notifications ---
+  getNotifications: async (userId) => {
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (!error && data && data.length > 0) return data;
+      } catch (e) {}
+    }
+    const notifs = getStored(STORAGE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS);
+    return notifs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  },
+
+  markNotificationRead: async (id) => {
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('notifications').update({ read: true }).eq('id', id);
+      } catch (e) {}
+    }
+    const notifs = getStored(STORAGE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS);
+    const updated = notifs.map((n) => (n.id === id ? { ...n, read: true } : n));
+    setStored(STORAGE_KEYS.NOTIFICATIONS, updated);
+    return true;
+  },
+
+  markAllNotificationsRead: async (userId) => {
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('notifications').update({ read: true });
+      } catch (e) {}
+    }
+    const notifs = getStored(STORAGE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS);
+    const updated = notifs.map((n) => ({ ...n, read: true }));
+    setStored(STORAGE_KEYS.NOTIFICATIONS, updated);
+    return true;
+  },
+
+  createNotification: async (notifData) => {
+    const newNotif = {
+      id: 'notif-' + Date.now(),
+      user_id: notifData.user_id || 'all',
+      type: notifData.type || 'info',
+      title: notifData.title || 'Notification',
+      message: notifData.message || '',
+      read: false,
+      created_at: new Date().toISOString(),
+    };
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('notifications').insert([newNotif]);
+      } catch (e) {}
+    }
+    const notifs = getStored(STORAGE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS);
+    const updated = [newNotif, ...notifs];
+    setStored(STORAGE_KEYS.NOTIFICATIONS, updated);
+    return newNotif;
+  },
+
+  deleteNotification: async (id) => {
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('notifications').delete().eq('id', id);
+      } catch (e) {}
+    }
+    const notifs = getStored(STORAGE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS);
+    const updated = notifs.filter((n) => n.id !== id);
+    setStored(STORAGE_KEYS.NOTIFICATIONS, updated);
+    return true;
   },
 };

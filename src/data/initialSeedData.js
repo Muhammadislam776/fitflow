@@ -489,3 +489,52 @@ export const INITIAL_ATTENDANCE = [
     created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
   },
 ];
+
+export const INITIAL_NOTIFICATIONS = [
+  {
+    id: 'notif-1',
+    user_id: 'all',
+    type: 'class',
+    title: 'High Attendance Alert 🔥',
+    message: 'High-Octane HIIT Burn at 12:30 is 90% full. 14 of 15 slots booked.',
+    read: false,
+    created_at: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'notif-2',
+    user_id: 'all',
+    type: 'success',
+    title: 'QR Check-In Verified ✅',
+    message: 'Member Elena Rostova scanned QR pass for Sunrise Vinyasa Yoga.',
+    read: false,
+    created_at: new Date(Date.now() - 14 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'notif-3',
+    user_id: 'all',
+    type: 'warning',
+    title: 'Floor Rig Maintenance ⚠️',
+    message: 'Squat rack #3 scheduled for safety bolt torque check at 2:00 PM.',
+    read: false,
+    created_at: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'notif-4',
+    user_id: 'all',
+    type: 'milestone',
+    title: 'Coaching Milestone Reached 🏆',
+    message: 'Outstanding performance! You completed 18.5 coaching hours this week with 98% athlete satisfaction.',
+    read: true,
+    created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'notif-5',
+    user_id: 'all',
+    type: 'info',
+    title: 'Studio Cloud Realtime Active ⚡',
+    message: 'Live biometric & QR turnstile sync with Supabase is running with 22ms latency.',
+    read: true,
+    created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+  },
+];
+
