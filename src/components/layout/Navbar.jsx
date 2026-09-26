@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, QrCode, LogOut } from 'lucide-react';
+import { Menu, QrCode, LogOut, UserPlus } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useGym } from '../../context/GymContext';
 import { NotificationDropdown } from './NotificationDropdown';
@@ -58,7 +58,17 @@ export const Navbar = ({ onOpenSidebar, onOpenScanner }) => {
         )}
 
         {/* Quick Action according to authorized role */}
-        {role === 'admin' || role === 'trainer' ? (
+        {role === 'admin' ? (
+          <Button
+            variant="accent"
+            size="sm"
+            onClick={() => navigate('/admin/members')}
+            icon={UserPlus}
+            className="hidden sm:inline-flex"
+          >
+            Add Member
+          </Button>
+        ) : role === 'trainer' ? (
           <Button
             variant="accent"
             size="sm"

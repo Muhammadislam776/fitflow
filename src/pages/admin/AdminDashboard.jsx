@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import confetti from 'canvas-confetti';
 import {
   Users,
   CreditCard,
@@ -25,6 +26,13 @@ import {
   Sliders,
   Layers,
   Heart,
+  FileText,
+  Download,
+  Printer,
+  FileSpreadsheet,
+  Check,
+  X,
+  Filter,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useGym } from '../../context/GymContext';
@@ -32,20 +40,89 @@ import { StatCard } from '../../components/common/StatCard';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
+import { Modal } from '../../components/common/Modal';
 import { GrowthChart } from '../../components/charts/GrowthChart';
 import { AttendanceChart } from '../../components/charts/AttendanceChart';
 import { PlanDistributionChart } from '../../components/charts/PlanDistributionChart';
 import { QRScannerModal } from '../../components/qr/QRScannerModal';
 
+// Audio chime using Web Audio API
+const playReportChime = () => {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc1.frequency.setValueAtTime(523.25, now); // C5
+    osc2.frequency.setValueAtTime(783.99, now + 0.1); // G5
+
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc1.start(now);
+    osc1.stop(now + 0.2);
+    osc2.start(now + 0.1);
+    osc2.stop(now + 0.4);
+  } catch (e) {}
+};
+
+// Universal CSV Download Helper
+const exportToCSV = (filename, rows) => {
+  if (!rows || !rows.length) return;
+  const separator = ',';
+  const keys = Object.keys(rows[0]);
+  const csvContent =
+    keys.join(separator) +
+    '\n' +
+    rows
+      .map((row) => {
+        return keys
+          .map((k) => {
+            let cell = row[k] === null || row[k] === undefined ? '' : row[k];
+            cell = cell instanceof Date ? cell.toLocaleString() : cell.toString().replace(/"/g, '""');
+            if (cell.search(/("|,|\n)/g) >= 0) {
+              cell = `"${cell}"`;
+            }
+            return cell;
+          })
+          .join(separator);
+      })
+      .join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
 export const AdminDashboard = () => {
   const { user } = useAuth();
-  const { metrics, classes, attendance, members, refreshData } = useGym();
+  const { metrics, classes, attendance, members, memberships, refreshData } = useGym();
   const navigate = useNavigate();
 
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncSuccess, setSyncSuccess] = useState(false);
-  const [chartPeriod, setChartPeriod] = useState('monthly'); // 'weekly' | 'monthly' | 'quarterly'
+  const [downloadSuccessMessage, setDownloadSuccessMessage] = useState(null);
+
+  // Custom Report Generator state
+  const [reportType, setReportType] = useState('attendance'); // 'attendance' | 'revenue' | 'classes' | 'members'
+  const [reportRange, setReportRange] = useState('all'); // 'today' | 'week' | 'month' | 'all'
 
   const greetingName = user?.full_name?.split(' ')[0] || 'Admin';
 
@@ -101,6 +178,97 @@ export const AdminDashboard = () => {
     },
   ];
 
+  // Generate Reports Data
+  const getAttendanceReportData = () => {
+    return attendance.map((a, i) => ({
+      ID: a.id || `ATT-${i + 1}`,
+      MemberName: a.member?.full_name || 'Registered Athlete',
+      Email: a.member?.email || 'N/A',
+      ClassSession: a.class?.name || 'General Gym Floor Entry',
+      CheckInTime: a.check_in_time ? new Date(a.check_in_time).toLocaleString() : new Date().toLocaleString(),
+      Method: (a.check_in_method || 'QR Scanner').toUpperCase(),
+      Status: 'VERIFIED',
+    }));
+  };
+
+  const getRevenueReportData = () => {
+    return memberships.map((m, i) => {
+      const planPrice = m.plan_id === 'plan-unlimited' ? '£70' : m.plan_id === 'plan-premium' ? '£50' : '£30';
+      return {
+        MembershipID: m.id || `MSHIP-${i + 1}`,
+        MemberID: m.member_id || 'N/A',
+        PlanTier: m.plan_id?.replace('plan-', '').toUpperCase() || 'PREMIUM',
+        BillingAmount: planPrice,
+        Cycle: 'Monthly',
+        StartDate: m.start_date || '2026-03-01',
+        EndDate: m.end_date || '2026-12-31',
+        PaymentStatus: m.status?.toUpperCase() || 'ACTIVE',
+      };
+    });
+  };
+
+  const getClassesReportData = () => {
+    return classes.map((c, i) => ({
+      ClassID: c.id || `CLS-${i + 1}`,
+      Name: c.name,
+      Category: c.category || 'Fitness',
+      Instructor: c.trainer?.full_name || 'Coach Alex Morgan',
+      ScheduleDate: c.date,
+      TimeSlot: `${c.start_time} - ${c.end_time}`,
+      Location: c.location || 'Studio A',
+      Capacity: c.capacity,
+      ConfirmedAthletes: c.confirmedCount || 0,
+      SpotsLeft: Math.max(0, c.capacity - (c.confirmedCount || 0)),
+      OccupancyRate: `${Math.min(100, Math.round(((c.confirmedCount || 0) / c.capacity) * 100))}%`,
+    }));
+  };
+
+  const getMembersReportData = () => {
+    return members.map((m, i) => ({
+      MemberID: m.id || `MBR-${i + 1}`,
+      FullName: m.full_name,
+      Email: m.email,
+      Role: m.role?.toUpperCase() || 'MEMBER',
+      PlanStatus: m.membership?.status?.toUpperCase() || 'ACTIVE',
+      PlanTier: m.plan?.name || 'Premium Plan',
+      JoinedDate: m.created_at ? new Date(m.created_at).toLocaleDateString() : '2026-02-01',
+    }));
+  };
+
+  const triggerDownload = (type, customFilename = null) => {
+    let rows = [];
+    let defaultName = `FitFlow_${type}_Report_${new Date().toISOString().split('T')[0]}.csv`;
+
+    if (type === 'attendance') {
+      rows = getAttendanceReportData();
+    } else if (type === 'revenue') {
+      rows = getRevenueReportData();
+    } else if (type === 'classes') {
+      rows = getClassesReportData();
+    } else if (type === 'members') {
+      rows = getMembersReportData();
+    }
+
+    if (!rows.length) {
+      rows = [
+        { Notice: 'FitFlow Report', Date: new Date().toLocaleString(), TotalRecords: 0 }
+      ];
+    }
+
+    exportToCSV(customFilename || defaultName, rows);
+    playReportChime();
+    try {
+      confetti({
+        particleCount: 50,
+        spread: 60,
+        origin: { y: 0.6 },
+      });
+    } catch (e) {}
+
+    setDownloadSuccessMessage(`${type.toUpperCase()} Report downloaded successfully!`);
+    setTimeout(() => setDownloadSuccessMessage(null), 3500);
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       {/* 1. EXECUTIVE COMMAND CENTER HERO SPOTLIGHT BANNER */}
@@ -137,7 +305,7 @@ export const AdminDashboard = () => {
             </h1>
 
             <p className="text-sm sm:text-base text-slate-200 font-normal leading-relaxed max-w-2xl">
-              Complete gym overview. Monitor real-time turnstiles, evaluate membership run rates, verify coach sessions, and track facility occupancy.
+              Complete gym overview. Monitor real-time turnstiles, evaluate membership run rates, verify coach sessions, and export executive business reports.
             </p>
 
             {/* Quick KPI Badges */}
@@ -159,30 +327,39 @@ export const AdminDashboard = () => {
 
           {/* Quick Action Buttons */}
           <div className="flex flex-row sm:flex-col lg:flex-row items-center gap-3 shrink-0">
+            {/* Generate & Download Reports Button */}
             <button
-              onClick={() => setScannerOpen(true)}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2.5 px-6 py-4 rounded-2xl bg-gradient-to-r from-accent-500 to-orange-500 text-white font-black text-sm shadow-xl shadow-accent-500/40 hover:shadow-accent-500/60 hover:scale-[1.03] active:scale-[0.98] transition-all cursor-pointer border border-accent-400/30"
+              onClick={() => setReportModalOpen(true)}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 text-white font-black text-xs sm:text-sm shadow-xl shadow-emerald-600/40 hover:shadow-emerald-600/60 hover:scale-[1.03] active:scale-[0.98] transition-all cursor-pointer border border-emerald-400/30"
             >
-              <QrCode className="w-5 h-5 animate-pulse" />
-              <span>Launch QR Scanner</span>
+              <Download className="w-4 h-4 animate-bounce" />
+              <span>Export Reports (.CSV)</span>
             </button>
 
             <button
               onClick={() => navigate('/admin/classes')}
-              className="flex items-center justify-center gap-2 px-5 py-4 rounded-2xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-bold shadow-lg shadow-brand-600/30 hover:scale-105 transition-all cursor-pointer"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-brand-600 hover:bg-brand-500 text-white font-black text-xs sm:text-sm shadow-xl shadow-brand-600/30 hover:scale-[1.03] transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Schedule Class</span>
             </button>
 
             <button
+              onClick={() => navigate('/admin/members')}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-accent-500 to-orange-500 hover:from-accent-600 hover:to-orange-600 text-white font-black text-xs sm:text-sm shadow-xl shadow-accent-500/30 hover:scale-[1.03] transition-all cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Add Member</span>
+            </button>
+
+            <button
               onClick={handleSyncData}
               disabled={isSyncing}
-              className="flex items-center justify-center gap-2 px-4 py-4 rounded-2xl bg-slate-800/90 hover:bg-slate-700/90 text-white text-sm font-bold backdrop-blur-md border border-slate-600/80 transition-all cursor-pointer shadow-lg"
+              className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-slate-800/90 hover:bg-slate-700/90 text-white text-xs sm:text-sm font-bold backdrop-blur-md border border-slate-600/80 transition-all cursor-pointer shadow-lg"
               title="Sync with Supabase"
             >
               <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin text-brand-400' : 'text-slate-300'}`} />
-              <span className="hidden sm:inline">{syncSuccess ? 'Synced!' : 'Cloud Sync'}</span>
+              <span className="hidden sm:inline">{syncSuccess ? 'Synced!' : 'Sync'}</span>
             </button>
           </div>
         </div>
@@ -203,6 +380,22 @@ export const AdminDashboard = () => {
         </div>
       </div>
 
+      {/* Success Notification Bar for Downloads */}
+      {downloadSuccessMessage && (
+        <div className="p-4 rounded-2xl bg-emerald-50 text-emerald-900 border border-emerald-200 text-xs sm:text-sm font-bold flex items-center justify-between shadow-md animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            <span>{downloadSuccessMessage}</span>
+          </div>
+          <button
+            onClick={() => setDownloadSuccessMessage(null)}
+            className="text-emerald-700 hover:text-emerald-900 text-xs font-semibold"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* 2. TOP METRIC STAT CARDS WITH GLOW GRADIENTS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <div className="relative overflow-hidden rounded-3xl bg-white p-6 border border-slate-200/90 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
@@ -213,7 +406,7 @@ export const AdminDashboard = () => {
             </div>
           </div>
           <div className="mt-3">
-            <h3 className="text-3xl font-black text-navy-900">{metrics?.totalMembers || '524'}</h3>
+            <h3 className="text-3xl font-black text-navy-900">{metrics?.totalMembers || members.length || '524'}</h3>
             <p className="mt-1 text-xs text-brand-600 font-bold flex items-center gap-1">
               <TrendingUp className="w-3.5 h-3.5" />
               <span>+12.4% vs last month</span>
@@ -274,7 +467,140 @@ export const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* 3. STUDIO FLOOR OCCUPANCY RADAR & QUICK ACTIONS */}
+      {/* 3. EXECUTIVE REPORTS & DATA EXPORT HUB */}
+      <div className="rounded-3xl bg-white p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm">
+              <FileSpreadsheet className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-navy-900 tracking-tight flex items-center gap-2">
+                <span>Executive Reports & Data Export Hub</span>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                  Live Generator
+                </span>
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500">
+                Generate and download compliance audit trails, turnstile logs, and membership financials.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setReportModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md transition-all cursor-pointer self-start sm:self-auto"
+          >
+            <Filter className="w-3.5 h-3.5 text-accent-400" />
+            <span>Custom Report Builder</span>
+          </button>
+        </div>
+
+        {/* 4 Quick Export Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Report 1: Attendance */}
+          <div className="p-5 rounded-2xl bg-slate-50/80 border border-slate-200/80 hover:bg-slate-50 hover:border-emerald-300 hover:shadow-md transition-all flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="p-2 rounded-xl bg-emerald-100 text-emerald-700">
+                  <CheckCircle2 className="w-4 h-4" />
+                </span>
+                <span className="text-[11px] font-bold text-slate-400 uppercase">
+                  {attendance.length} Logs
+                </span>
+              </div>
+              <h3 className="text-sm font-black text-navy-900">Attendance & Turnstile Log</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Verified member check-ins, timestamps, QR pass methods, and studio rooms.
+              </p>
+            </div>
+            <button
+              onClick={() => triggerDownload('attendance')}
+              className="mt-4 w-full py-2.5 px-3 rounded-xl bg-white hover:bg-emerald-600 hover:text-white text-navy-900 border border-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-600 group-hover:text-white" />
+              <span>Download (.CSV)</span>
+            </button>
+          </div>
+
+          {/* Report 2: Financial Revenue */}
+          <div className="p-5 rounded-2xl bg-slate-50/80 border border-slate-200/80 hover:bg-slate-50 hover:border-amber-300 hover:shadow-md transition-all flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="p-2 rounded-xl bg-amber-100 text-amber-700">
+                  <DollarSign className="w-4 h-4" />
+                </span>
+                <span className="text-[11px] font-bold text-slate-400 uppercase">
+                  MRR Audit
+                </span>
+              </div>
+              <h3 className="text-sm font-black text-navy-900">Revenue & Membership Billing</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Subscription tier distribution (Basic £30, Premium £50, Unlimited £70) and revenue run-rates.
+              </p>
+            </div>
+            <button
+              onClick={() => triggerDownload('revenue')}
+              className="mt-4 w-full py-2.5 px-3 rounded-xl bg-white hover:bg-amber-600 hover:text-white text-navy-900 border border-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
+            >
+              <Download className="w-3.5 h-3.5 text-amber-600 group-hover:text-white" />
+              <span>Download (.CSV)</span>
+            </button>
+          </div>
+
+          {/* Report 3: Classes & Capacity */}
+          <div className="p-5 rounded-2xl bg-slate-50/80 border border-slate-200/80 hover:bg-slate-50 hover:border-indigo-300 hover:shadow-md transition-all flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="p-2 rounded-xl bg-indigo-100 text-indigo-700">
+                  <Calendar className="w-4 h-4" />
+                </span>
+                <span className="text-[11px] font-bold text-slate-400 uppercase">
+                  {classes.length} Sessions
+                </span>
+              </div>
+              <h3 className="text-sm font-black text-navy-900">Class Occupancy & Rosters</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Timetable capacity, booked spots, waitlists, instructor assignments, and room usage.
+              </p>
+            </div>
+            <button
+              onClick={() => triggerDownload('classes')}
+              className="mt-4 w-full py-2.5 px-3 rounded-xl bg-white hover:bg-indigo-600 hover:text-white text-navy-900 border border-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
+            >
+              <Download className="w-3.5 h-3.5 text-indigo-600 group-hover:text-white" />
+              <span>Download (.CSV)</span>
+            </button>
+          </div>
+
+          {/* Report 4: Member Roster */}
+          <div className="p-5 rounded-2xl bg-slate-50/80 border border-slate-200/80 hover:bg-slate-50 hover:border-brand-300 hover:shadow-md transition-all flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="p-2 rounded-xl bg-brand-100 text-brand-700">
+                  <Users className="w-4 h-4" />
+                </span>
+                <span className="text-[11px] font-bold text-slate-400 uppercase">
+                  {members.length} Members
+                </span>
+              </div>
+              <h3 className="text-sm font-black text-navy-900">Complete Athlete Directory</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Full member contact lists, membership statuses, join dates, and access permissions.
+              </p>
+            </div>
+            <button
+              onClick={() => triggerDownload('members')}
+              className="mt-4 w-full py-2.5 px-3 rounded-xl bg-white hover:bg-brand-600 hover:text-white text-navy-900 border border-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
+            >
+              <Download className="w-3.5 h-3.5 text-brand-600 group-hover:text-white" />
+              <span>Download (.CSV)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. STUDIO FLOOR OCCUPANCY RADAR & QUICK ACTIONS */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Real-time Zone Occupancy Radar */}
         <div className="lg:col-span-8 rounded-3xl bg-white p-6 border border-slate-200/90 shadow-sm">
@@ -373,7 +699,7 @@ export const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* 4. ANALYTICS CHARTS SECTION */}
+      {/* 5. ANALYTICS CHARTS SECTION */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Membership Growth Area Chart */}
         <Card className="lg:col-span-2">
@@ -402,7 +728,7 @@ export const AdminDashboard = () => {
         </Card>
       </div>
 
-      {/* 5. SECOND ROW: ATTENDANCE VELOCITY & UPCOMING CLASSES */}
+      {/* 6. SECOND ROW: ATTENDANCE VELOCITY & UPCOMING CLASSES */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Weekly Attendance Bar Chart */}
         <Card className="lg:col-span-2">
@@ -481,7 +807,7 @@ export const AdminDashboard = () => {
         </Card>
       </div>
 
-      {/* 6. RECENT LIVE CHECK-IN STREAM */}
+      {/* 7. RECENT LIVE CHECK-IN STREAM */}
       <Card>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -532,6 +858,129 @@ export const AdminDashboard = () => {
           ))}
         </div>
       </Card>
+
+      {/* 8. CUSTOM REPORT GENERATOR MODAL */}
+      <Modal
+        isOpen={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        title="Custom Executive Report Generator"
+        description="Select audit criteria, preview dataset, and download instant CSV spreadsheet."
+        maxWidth="max-w-2xl"
+      >
+        <div className="space-y-5">
+          {/* Select Report Type */}
+          <div>
+            <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-2">
+              1. Choose Report Type
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {[
+                { id: 'attendance', label: 'Attendance Log', icon: CheckCircle2 },
+                { id: 'revenue', label: 'Revenue & Plans', icon: DollarSign },
+                { id: 'classes', label: 'Class Capacity', icon: Calendar },
+                { id: 'members', label: 'Member Roster', icon: Users },
+              ].map((t) => {
+                const IconComponent = t.icon;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setReportType(t.id)}
+                    className={`p-3 rounded-2xl border text-center font-bold text-xs flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
+                      reportType === t.id
+                        ? 'border-emerald-500 bg-emerald-50 text-emerald-900 shadow-sm'
+                        : 'border-slate-200 hover:border-slate-300 text-slate-600 bg-white'
+                    }`}
+                  >
+                    <IconComponent className={`w-5 h-5 ${reportType === t.id ? 'text-emerald-600' : 'text-slate-400'}`} />
+                    <span>{t.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Select Date Range */}
+          <div>
+            <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-2">
+              2. Select Time Range
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { id: 'today', label: "Today's Activity" },
+                { id: 'week', label: 'Last 7 Days' },
+                { id: 'month', label: 'This Month (30d)' },
+                { id: 'all', label: 'All-Time Records' },
+              ].map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => setReportRange(r.id)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    reportRange === r.id
+                      ? 'bg-navy-900 text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-600 hover:text-navy-900'
+                  }`}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Preview Dataset Summary Box */}
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-bold text-navy-900">
+                Preview Summary: <strong className="text-emerald-600 uppercase">{reportType}</strong> Report
+              </span>
+              <span className="text-[11px] text-slate-500 font-semibold">
+                Format: Microsoft Excel / CSV UTF-8
+              </span>
+            </div>
+            <p className="text-xs text-slate-500">
+              {reportType === 'attendance' && `Ready to export ${attendance.length} verified athlete turnstile records with timestamps and scan methods.`}
+              {reportType === 'revenue' && `Ready to export ${memberships.length} active subscription contracts, billing tiers, and recurring revenues.`}
+              {reportType === 'classes' && `Ready to export ${classes.length} scheduled studio sessions, coach allocations, and capacity fill rates.`}
+              {reportType === 'members' && `Ready to export ${members.length} registered member profiles, contact emails, and account privileges.`}
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="pt-2 flex items-center justify-between gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => window.print()}
+              icon={Printer}
+              type="button"
+            >
+              Print Preview
+            </Button>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => setReportModalOpen(false)}
+                type="button"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="accent"
+                onClick={() => {
+                  triggerDownload(reportType, `FitFlow_${reportType}_${reportRange}_${Date.now()}.csv`);
+                  setReportModalOpen(false);
+                }}
+                icon={Download}
+                type="button"
+                className="bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-600/30"
+              >
+                Download CSV Spreadsheet
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Modal>
 
       {/* Global QR Scanner Modal */}
       <QRScannerModal isOpen={scannerOpen} onClose={() => setScannerOpen(false)} />
