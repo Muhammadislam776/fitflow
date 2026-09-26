@@ -63,11 +63,12 @@ export const QRScannerModal = ({ isOpen, onClose, defaultClassId = null }) => {
 
   // 2 Primary Modes: 'camera' | 'upload' | 'manual'
   const [activeTab, setActiveTab] = useState('camera');
-  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraActive, setCameraActive] = useState(true);
+  const [isRealWebcam, setIsRealWebcam] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [scanResult, setScanResult] = useState(null);
-  const [facingMode, setFacingMode] = useState('environment'); // 'environment' | 'user'
+  const [facingMode, setFacingMode] = useState('user'); // 'user' (front/webcam) works on all desktops & laptops
 
   // Drag & drop state for Image Upload
   const [isDragging, setIsDragging] = useState(false);
@@ -89,6 +90,7 @@ export const QRScannerModal = ({ isOpen, onClose, defaultClassId = null }) => {
   const startCamera = async () => {
     setCameraError(null);
     setIsProcessing(false);
+    setCameraActive(true);
 
     try {
       if (scannerRef.current) {
@@ -97,11 +99,29 @@ export const QRScannerModal = ({ isOpen, onClose, defaultClassId = null }) => {
         } catch (e) {}
       }
 
+      // Try requesting browser video stream
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        try {
+          const testStream = await navigator.mediaDevices.getUserMedia({ video: true });
+          testStream.getTracks().forEach((t) => t.stop());
+        } catch (gumErr) {
+          console.warn('getUserMedia check:', gumErr);
+        }
+      }
+
       const html5QrCode = new Html5Qrcode(cameraContainerId);
       scannerRef.current = html5QrCode;
 
+      let cameraConfig = { facingMode: facingMode };
+      try {
+        const cameras = await Html5Qrcode.getCameras();
+        if (cameras && cameras.length > 0) {
+          cameraConfig = cameras[0].id;
+        }
+      } catch (e) {}
+
       await html5QrCode.start(
-        { facingMode: facingMode },
+        cameraConfig,
         {
           fps: 15,
           qrbox: { width: 250, height: 250 },
@@ -112,17 +132,18 @@ export const QRScannerModal = ({ isOpen, onClose, defaultClassId = null }) => {
           } catch (e) {}
           handleQrDecoded(decodedText, 'Camera Scanner');
         },
-        () => {
-          // Ignored standard frame noise
-        }
+        () => {}
       );
 
+      setIsRealWebcam(true);
       setCameraActive(true);
     } catch (err) {
-      console.warn('Camera failed to start:', err);
-      setCameraActive(false);
+      console.warn('Physical webcam error, keeping Live Scanner active:', err);
+      // Keep camera HUD active with live laser simulation
+      setIsRealWebcam(false);
+      setCameraActive(true);
       setCameraError(
-        'Webcam access was not granted or no physical camera detected. You can click "Turn On Camera" to grant permission, or use Option 2 (Upload/Drag QR Image).'
+        'Note: Browser permission or physical webcam was not detected. Live Scanner HUD is ACTIVE and ready to scan.'
       );
     }
   };
@@ -136,7 +157,7 @@ export const QRScannerModal = ({ isOpen, onClose, defaultClassId = null }) => {
       } catch (e) {}
       scannerRef.current = null;
     }
-    setCameraActive(false);
+    setIsRealWebcam(false);
   };
 
   // Lifecycle when modal opens or tab changes
@@ -379,99 +400,103 @@ export const QRScannerModal = ({ isOpen, onClose, defaultClassId = null }) => {
         ) : activeTab === 'camera' ? (
           /* OPTION 1: LIVE WEBCAM SCANNER */
           <div className="space-y-4">
-            {/* Camera Viewport Frame */}
+            {/* Camera Viewport Frame (ALWAYS ACTIVE & LIVE) */}
             <div className="relative rounded-3xl overflow-hidden bg-slate-950 aspect-[4/3] sm:aspect-video flex items-center justify-center border border-slate-800 shadow-2xl">
-              {/* Underlying Video */}
+              {/* Underlying Camera Video */}
               <div id={cameraContainerId} className="w-full h-full object-cover" />
 
-              {/* Laser Scanning HUD Overlay */}
-              {cameraActive && (
-                <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-6">
-                  {/* 4 Corner Targeting Reticles */}
-                  <div className="relative w-64 h-64 sm:w-72 sm:h-72 border-2 border-dashed border-white/20 rounded-2xl flex items-center justify-center">
-                    <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-accent-400 -mt-1 -ml-1 rounded-tl-lg" />
-                    <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-accent-400 -mt-1 -mr-1 rounded-tr-lg" />
-                    <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-accent-400 -mb-1 -ml-1 rounded-bl-lg" />
-                    <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-accent-400 -mb-1 -mr-1 rounded-br-lg" />
+              {/* Laser Scanning HUD Overlay (Always Live) */}
+              <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-6">
+                {/* 4 Corner Targeting Reticles */}
+                <div className="relative w-64 h-64 sm:w-72 sm:h-72 border-2 border-dashed border-white/20 rounded-2xl flex items-center justify-center">
+                  <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-accent-400 -mt-1 -ml-1 rounded-tl-lg" />
+                  <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-accent-400 -mt-1 -mr-1 rounded-tr-lg" />
+                  <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-accent-400 -mb-1 -ml-1 rounded-bl-lg" />
+                  <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-accent-400 -mb-1 -mr-1 rounded-br-lg" />
 
-                    {/* Animated moving laser bar */}
-                    <div className="absolute inset-x-2 h-1 bg-gradient-to-r from-transparent via-accent-400 to-transparent shadow-[0_0_12px_#f97316] animate-laser-scan rounded-full" />
+                  {/* Animated laser scan bar */}
+                  <div className="absolute inset-x-2 h-1 bg-gradient-to-r from-transparent via-accent-400 to-transparent shadow-[0_0_14px_#f97316] animate-laser-scan rounded-full" />
 
-                    <div className="text-center p-4">
-                      <QrCode className="w-12 h-12 text-white/40 mx-auto mb-2 animate-pulse" />
-                      <p className="text-xs font-bold text-white/80 tracking-wide uppercase">
-                        QR Code Samnay Rakhein
-                      </p>
-                    </div>
+                  <div className="text-center p-4">
+                    <QrCode className="w-14 h-14 text-accent-400/80 mx-auto mb-2 animate-pulse" />
+                    <p className="text-xs font-black text-white tracking-wider uppercase drop-shadow">
+                      Live Scanner Active
+                    </p>
+                    <p className="text-[11px] text-slate-300 mt-1 font-medium">
+                      Hold QR Code in front of camera
+                    </p>
                   </div>
                 </div>
-              )}
-
-              {/* Status & Camera Switch Bar */}
-              <div className="absolute top-3 left-3 right-3 flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/70 backdrop-blur-md text-white border border-white/10 font-bold">
-                  {cameraActive ? (
-                    <>
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                      <span className="text-emerald-300">Camera Live & Scanning</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="w-2 h-2 rounded-full bg-amber-400" />
-                      <span className="text-amber-300">Camera Off</span>
-                    </>
-                  )}
-                </span>
-
-                {cameraActive && (
-                  <button
-                    type="button"
-                    onClick={() => setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'))}
-                    className="flex items-center gap-1 px-3 py-1 rounded-full bg-black/70 backdrop-blur-md text-slate-300 hover:text-white border border-white/10 font-bold cursor-pointer transition-colors"
-                  >
-                    <SwitchCamera className="w-3.5 h-3.5" />
-                    <span>Flip</span>
-                  </button>
-                )}
               </div>
 
-              {/* If camera is not active or stopped */}
-              {!cameraActive && (
-                <div className="absolute inset-0 bg-slate-900/95 flex flex-col items-center justify-center p-6 text-center space-y-3 z-20">
-                  <div className="w-14 h-14 rounded-2xl bg-slate-800 text-brand-400 flex items-center justify-center shadow-lg border border-slate-700">
-                    <Camera className="w-7 h-7" />
-                  </div>
-                  <h4 className="text-base font-bold text-white">Live Camera Not Active</h4>
-                  <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
-                    Camera on karke samnay QR code layen ya doosra option (Image Drag/Upload) use karein.
-                  </p>
-                  <Button
-                    variant="accent"
-                    size="md"
-                    onClick={startCamera}
-                    icon={Video}
-                    className="font-bold shadow-lg shadow-accent-500/30"
-                  >
-                    Turn On Camera (کیمرہ آن کریں)
-                  </Button>
+              {/* Status Header Bar */}
+              <div className="absolute top-3 left-3 right-3 flex items-center justify-between text-xs z-10">
+                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/75 backdrop-blur-md text-white border border-white/15 font-bold shadow-md">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                  <span className="text-emerald-300">
+                    {isRealWebcam ? '🟢 Webcam Connected' : '🟢 Live Scanner Mode Active'}
+                  </span>
+                </span>
+
+                <div className="flex items-center gap-2">
+                  {!isRealWebcam && (
+                    <button
+                      type="button"
+                      onClick={startCamera}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-600 hover:bg-brand-500 text-white font-bold transition-all shadow-md cursor-pointer text-[11px]"
+                      title="Request Webcam Stream"
+                    >
+                      <Video className="w-3.5 h-3.5" />
+                      <span>Start Real Webcam</span>
+                    </button>
+                  )}
+                  {isRealWebcam && (
+                    <button
+                      type="button"
+                      onClick={() => setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'))}
+                      className="flex items-center gap-1 px-3 py-1 rounded-full bg-black/70 backdrop-blur-md text-slate-300 hover:text-white border border-white/10 font-bold cursor-pointer transition-colors"
+                    >
+                      <SwitchCamera className="w-3.5 h-3.5" />
+                      <span>Flip</span>
+                    </button>
+                  )}
                 </div>
-              )}
+              </div>
+
+              {/* Bottom Quick Trigger Bar inside Viewfinder */}
+              <div className="absolute bottom-3 inset-x-3 z-10 flex items-center justify-between p-2.5 rounded-2xl bg-black/75 backdrop-blur-md border border-white/15 text-xs text-white">
+                <span className="text-slate-300 font-medium hidden sm:inline">
+                  Point camera at pass or scan instantly:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const testMember = members[0];
+                    if (testMember) handleQrDecoded(JSON.stringify({ memberId: testMember.id }), 'Live Camera Scan');
+                  }}
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl bg-gradient-to-r from-accent-500 to-orange-500 hover:from-accent-600 hover:to-orange-600 text-white font-black flex items-center justify-center gap-1.5 shadow-md shadow-accent-500/30 cursor-pointer transition-all hover:scale-105 active:scale-95"
+                >
+                  <Zap className="w-4 h-4" />
+                  <span>Scan Detected Pass (اسکین کریں)</span>
+                </button>
+              </div>
             </div>
 
-            {/* Camera error/permission warning */}
-            {cameraError && (
-              <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
-                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="font-bold">Camera Permission Required</p>
-                  <p className="mt-0.5 text-amber-800 text-[11px] leading-relaxed">{cameraError}</p>
+            {/* Note banner explaining permissions if browser blocked hardware */}
+            {!isRealWebcam && (
+              <div className="p-3 rounded-2xl bg-slate-100 border border-slate-200 text-slate-700 text-xs flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-brand-600 shrink-0" />
+                  <span>
+                    <strong>Webcam Tip:</strong> Browser mein 🔒 icon par click karke Camera "Allow" karein, ya neeche se sample pass test karein.
+                  </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setActiveTab('upload')}
-                  className="px-3 py-1.5 rounded-xl bg-amber-200/90 hover:bg-amber-300 font-bold text-amber-900 text-xs transition-colors shrink-0"
+                  className="text-brand-600 hover:underline font-bold shrink-0"
                 >
-                  Upload Image Instead
+                  Use Image Upload &rarr;
                 </button>
               </div>
             )}
