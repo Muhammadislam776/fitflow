@@ -43,3 +43,23 @@
   transform: translateY(-2px);
   box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.08);
 }
+
+@keyframes qrLaserScan {
+  0% {
+    top: 8%;
+    opacity: 0.85;
+  }
+  50% {
+    top: 88%;
+    opacity: 1;
+  }
+  100% {
+    top: 8%;
+    opacity: 0.85;
+  }
+}
+
+.animate-laser-scan {
+  animation: qrLaserScan 2.2s ease-in-out infinite;
+}
+
