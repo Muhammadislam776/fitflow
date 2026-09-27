@@ -1,71 +1,111 @@
-# FITFLOW — Complete Gym Membership & Workout Management Platform (Phase 1)
+# FITFLOW — Next-Gen Gym Membership & Studio Management Platform
 
-> **"Manage your gym. Grow your community."**
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel%20Production-emerald?style=for-the-badge&logo=vercel)](https://fitflow-ladt.vercel.app/)
+[![React](https://img.shields.io/badge/React-18.x-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org/)
+[![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?style=for-the-badge&logo=vite)](https://vitejs.dev/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-v3.4-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL%20RLS-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.com/)
 
-FITFLOW is a production-quality, modern fitness SaaS platform engineered for boutique studios, CrossFit boxes, and commercial fitness centers. It features a complete role-based architecture (**Admin/Gym Owner**, **Trainer/Staff**, and **Gym Member**), atomic database-level class booking capacity enforcement, automatic waitlist promotion, camera-based QR check-in scanning, and executive analytics powered by Recharts.
+> **"Manage your gym. Elevate your athletes. Grow your community."**
+
+🌐 **Live Production Deployment**: [https://fitflow-ladt.vercel.app/](https://fitflow-ladt.vercel.app/)  
+📦 **GitHub Repository**: [https://github.com/Muhammadislam776/fitflow.git](https://github.com/Muhammadislam776/fitflow.git)
 
 ---
 
-## 🚀 Key Features
+## 🌟 Overview
 
-### 1. Multi-Role Portals & Dashboards
-* **Admin / Gym Owner**:
-  * Executive dashboard with **Membership Growth** (LineChart), **Weekly Attendance Velocity** (BarChart), and **Plan Tier Distribution** (DonutChart).
-  * Member directory with search, status filters, and detailed profile viewer (with overview, plan benefits, bookings, attendance, and Phase 2 workout placeholders).
-  * Membership plan creation & management (£30 Basic, £50 Premium, £70 Unlimited).
-  * Class timetable scheduling with trainer assignment, location, and spot capacity caps.
-  * Real-time Bookings & Waitlist tracking with instant manual promotion/cancellation.
-  * Live Attendance logs with QR scan vs. manual check-in filters.
-  * Coaching staff management and studio settings.
-* **Trainer / Staff**:
-  * Assigned sessions roster viewer with real-time attendee lists.
-  * Live Front Desk & Class Camera QR Scanner (`html5-qrcode`) with fallback manual search.
-  * Athlete workout and attendance notes.
-* **Member**:
-  * Personalized dashboard with greeting, membership status, and 7-day workout streak fire counter.
-  * Interactive class catalog with category filters, live capacity progress bars (`18/20 spots`), and 1-click **Book Class** or **Join Waitlist**.
-  * Personal digital gym check-in pass (`qrcode.react`) with 60-second auto-refreshing security tokens.
-  * My Bookings manager with waitlist queue positions (`#1 on waitlist`) and atomic cancellation.
-  * Personal attendance and check-in timeline.
+**FITFLOW** is an enterprise-grade, high-performance SaaS platform purpose-built for boutique fitness studios, CrossFit boxes, and commercial gym clubs. It combines a clean high-contrast dark aesthetic with atomic concurrency-safe class bookings, automated waitlist promotions, live dual-mode QR check-ins, a full trainer coaching suite with Web Audio HIIT stopwatches, and an **Executive Admin Command Center** featuring **Real-Time Member Audit Reports** and 1-click `.CSV` dataset exports.
 
-### 2. Concurrency Safety & Automated Waitlists
-* **Atomic Capacity Lock**: Safe booking logic prevents race conditions so multiple members cannot simultaneously claim the final open spot.
-* **Instant Waitlist Promotion**: When a confirmed member cancels their spot, the top-position waitlisted member is automatically promoted to `confirmed`, and a real-time celebratory toast notification is dispatched.
+---
 
-### 3. Dual-Engine Persistence
-* **Direct Supabase Integration**: Connects via `@supabase/supabase-js` using PostgreSQL with Row Level Security (RLS) policies and PL/pgSQL stored procedures.
-* **Instant Seed Engine**: Includes an initial rich dataset (1 Gym, 3 Plans, 10 Members, 3 Trainers, 8 Classes with bookings and attendance) stored in browser storage. Allows instant zero-setup live testing with zero broken buttons right out of the box.
+## 🚀 Key Modules & Capabilities
+
+### 1. 🛡️ Executive Admin Command Center
+* **Live Operational Spotlight**: Real-time Supabase cloud sync status, latency monitor (18ms), turnstile uptime (99.98%), and today's revenue run-rates.
+* **Balanced Responsive Action Toolbar**: 4 full-width symmetric action buttons (`Export Reports`, `Schedule Class`, `Register Member`, `Sync Database`) perfectly responsive across all viewports.
+* **Real-Time Member Records Audit Hub**:
+  * Live reactive table showing all enrolled athletes with custom Dicebear avatars, contact emails, and member IDs.
+  * Plan tier badges with monthly fees: **Unlimited VIP (£70/mo)**, **Premium Gold (£50/mo)**, and **Starter Basic (£30/mo)**.
+  * Active/Expired membership status with pulsing indicators.
+  * Turnstile check-in frequency counters with visual activity bars.
+  * **Real-time Filter & Search Engine**: Instant search by name, email, or ID; filter by plan tier or status; sort by newest joined, check-ins, or alphabetical order.
+  * **1-Click CSV Exports**: Download Filtered Roster (`.CSV`), Master Executive Audit (`.CSV`), or Individual Athlete Dossier (`.CSV`) with Web Audio chime and confetti effects.
+* **Interactive Analytics Suite (Recharts)**: Membership Growth Velocity (Area Chart), Weekly Attendance Velocity (Bar Chart), and Subscription Plan Distribution (Donut Chart).
+* **Facility Radar & Staff Leaderboard**: Live occupancy meters across studio zones and coach schedules.
+
+### 2. 🏋️‍♂️ Certified Coach & Trainer Portal
+* **Daily Class Schedule & Attendees**: Real-time rosters, checked-in athlete counts, and spot caps.
+* **Integrated HIIT / Tabata Audio Stopwatch**: Digital workout timer with customizable interval presets (HIIT, Tabata, EMOM) and synthesized Web Audio beeps (start, countdown, finish).
+* **Studio Workout Category Covers**: High-resolution studio cards for Strength, Mobility, Functional Rig, and Conditioning.
+
+### 3. 📱 Athlete / Member Portal
+* **Personalized Athlete Hub**: Greeting, active subscription status, quick streak tracking, and QR pass shortcut.
+* **Dynamic Class Booking Engine**:
+  * Real-time capacity enforcement (`18/20 spots booked`).
+  * 1-Click atomic **Book Class** or **Join Waitlist**.
+  * Auto-promotion: When a confirmed member cancels, the top waitlisted athlete is instantly promoted with celebratory notifications.
+* **Digital QR Access Pass**: Dynamic QR code pass (`qrcode.react`) with 60-second rotating security tokens for turnstile scanning.
+* **Booking & Attendance History**: Active reservations, waitlist queue position badges, and verified turnstile logs.
+
+### 4. 📷 Dual-Mode QR Check-In Scanner
+* **Option 1 — Live Camera Scanning**: Active laser HUD targeting box, webcam stream selector, and auto-fallback with instant sound chime & confetti on verification.
+* **Option 2 — Drag & Drop / Image Upload**: Scan QR passes from saved screenshots or photo files (`html5-qrcode`).
+
+### 5. 🌐 High-Converting Public Landing Page
+* **Interactive Persona Switcher**: Live tabbed interface showcasing benefits tailored for Gym Owners, Coaches, and Athletes.
+* **Studio Timetable Preview**: Live class cards with trainers and room locations.
+* **FAQ Accordion & Dark Theme Footer**: Interactive questions, newsletter subscription, and social links.
+
+---
+
+## 🔑 Demo Sandbox Accounts (1-Click Switcher Available in Top Navbar)
+
+The application features a convenient **Role Switcher** on the top navigation bar (`[Admin]`, `[Trainer]`, `[Member]`) allowing instant zero-login role testing. You can also sign in manually:
+
+| Role | Name | Demo Email | Password | Access Level |
+|---|---|---|---|---|
+| **Admin / Owner** | Muhammad Islam | `admin@fitflow.com` | `password123` | Full Studio Management & Reports |
+| **Trainer / Coach** | Alex Morgan | `alex.trainer@fitflow.com` | `password123` | Class Rosters, Timers & Attendance |
+| **Athlete Member** | Sarah Jenkins | `sarah@example.com` | `password123` | Bookings, QR Pass & Schedules |
 
 ---
 
 ## 🛠️ Technology Stack
 
-* **Frontend**: React 18, Vite, Tailwind CSS, Lucide React, React Router v6
-* **Data Visualization**: Recharts
-* **QR Barcode Technology**: `qrcode.react` (SVG generation), `html5-qrcode` (webcam & camera scanner)
-* **Celebration Effects**: `canvas-confetti`
-* **Database & Auth**: Supabase (PostgreSQL, Row Level Security, RPC Functions)
+| Domain | Technologies |
+|---|---|
+| **Frontend Framework** | React 18, Vite 8, React Router v6 |
+| **Styling & Design** | Tailwind CSS v3.4, Lucide React Icons |
+| **Charts & Analytics** | Recharts (Area, Bar, Pie, ResponsiveContainer) |
+| **QR Code Engine** | `qrcode.react` (Generation), `html5-qrcode` (Live Camera & File Scan) |
+| **Audio & FX** | Web Audio API (Synthesizer Chimes & HIIT Beeps), `canvas-confetti` |
+| **Database & Auth** | Supabase (PostgreSQL 15, Row Level Security, RPC Functions) |
+| **Local Fallback Engine** | Dual-Engine LocalStorage Seed Store (Zero-config instant testing) |
+| **Deployment** | Vercel (Continuous Deployment from GitHub `main`) |
 
 ---
 
-## 📦 Installation & Setup
+## 📦 Local Installation & Setup
 
-1. **Clone or enter the project directory**:
+1. **Clone the repository**:
    ```bash
-   cd f:\internship\products\FitFlow
+   git clone https://github.com/Muhammadislam776/fitflow.git
+   cd fitflow
    ```
 
-2. **Install dependencies**:
+2. **Install project dependencies**:
    ```bash
    npm install
    ```
 
-3. **Start the local development server**:
+3. **Start the Vite development server**:
    ```bash
    npm run dev
    ```
+   Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-4. **Production Build**:
+4. **Production Build & Preview**:
    ```bash
    npm run build
    npm run preview
@@ -73,50 +113,43 @@ FITFLOW is a production-quality, modern fitness SaaS platform engineered for bou
 
 ---
 
-## 🔑 Demo Sandbox Accounts (1-Click Switcher Available on Navbar & Login)
+## 🗄️ Database Architecture & Supabase Setup
 
-| Role | Name | Email | Password |
-|---|---|---|---|
-| **Admin / Gym Owner** | Muhammad Islam | `admin@fitflow.com` | `password123` |
-| **Trainer / Coach** | Alex Morgan | `alex.trainer@fitflow.com` | `password123` |
-| **Member** | Sarah Jenkins | `sarah@example.com` | `password123` |
-
-*Note: The top navigation bar includes an instant 1-click Role Switcher (`[Admin]`, `[Trainer]`, `[Member]`) for rapid workflow evaluation.*
-
----
-
-## 🗄️ Database Schema & Supabase Setup
-
-The complete PostgreSQL migration script is available in:
+The production schema with atomic RPC functions and multi-tenant Row Level Security is available in:
 ```text
 supabase/schema.sql
 ```
 
-It includes:
-1. `gyms`
-2. `profiles`
-3. `membership_plans`
-4. `memberships`
-5. `classes`
-6. `class_bookings`
-7. `waitlists`
-8. `attendance`
-9. Multi-tenant Row Level Security (RLS) policies
-10. Atomic stored procedures: `book_class_atomic` & `cancel_booking_atomic`
+Key tables:
+* `gyms` — Facility configuration and branding
+* `profiles` — Role-based user accounts (`admin`, `trainer`, `member`)
+* `membership_plans` — Subscription tiers, durations, and pricing
+* `memberships` — Active member contracts and validity periods
+* `classes` — Schedules, instructors, rooms, and spot limits
+* `class_bookings` — Confirmed athlete slots with atomic concurrency guards
+* `waitlists` — FIFO auto-promotion queue
+* `attendance` — Turnstile check-in logs with verification methods
 
-To connect your Supabase project, copy `.env.example` to `.env`:
+To connect your own Supabase instance, create a `.env` file:
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_SUPABASE_ANON_KEY=your-anon-public-key
 ```
 
 ---
 
-## 🚀 Phase 2 Ready
+## 🌐 Deployment to Vercel
 
-The codebase is modularly partitioned to seamlessly receive Phase 2 enhancements:
-* AI Workout Generation & Adaptive Routines
-* Biometric Facial Recognition Check-In
-* GoCardless Direct Debit & Automated Retry
-* Studio Gamification & Leaderboards
-* CRM & Automated SMS/Email Waitlist Alerts
+FitFlow is configured for 1-click deployment on Vercel:
+* **Build Command**: `npm run build`
+* **Output Directory**: `dist`
+* **Install Command**: `npm install`
+* **Single Page Application Routing**: Configured via Vite build rules.
+
+**Live URL**: [https://fitflow-ladt.vercel.app/](https://fitflow-ladt.vercel.app/)
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License. Built with ❤️ for modern fitness communities.
